@@ -14,7 +14,9 @@ pub enum StringContent {
     Serialized(SerializedContent),
     Uuid(Uuid),
     Truncated(TruncatedContent),
+    Sliced(SlicedContent),
     Format(FormatContent),
+    Constant(ConstantContent),
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
@@ -30,6 +32,8 @@ impl StringContent {
             Self::Serialized(_) => "serialized",
             Self::Uuid(_) => "uuid",
             Self::Truncated(_) => "truncated",
+            Self::Sliced(_) => "sliced",
+            Self::Constant(_) => "constant",
             Self::Format(_) => "format",
         }
     }
@@ -183,6 +187,19 @@ pub enum SerializedContent {
 pub struct TruncatedContent {
     content: Box<Content>,
     length: Box<Content>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub struct SlicedContent {
+    content: Box<Content>,
+    langth: Box<Content>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub struct ConstantContent {
+    pub content: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
@@ -504,7 +521,7 @@ pub mod datetime_content {
     }
 }
 
-use crate::graph::string::Serialized;
+use crate::graph::string::{Serialized, Sliced, Constant};
 pub use datetime_content::ChronoValueFormatter;
 
 impl Serialize for DateTimeContent {
@@ -583,7 +600,17 @@ impl Compile for StringContent {
                 let length = compiler.build("length", length)?
                     .into_size();
                 RandomString::from(Truncated::new(content, length)).into()
-            }
+            },
+            StringContent::Sliced(SlicedContent { box langth, box content }) => {
+                let content = compiler.build("content", content)?
+                    .into_string();
+                let length = compiler.build("length", langth)?
+                    .into_string();
+                RandomString::from(Sliced::new(content, length)).into()
+            },
+            StringContent::Constant(ConstantContent { content }) => {
+                RandomString::from(Constant(content.clone())).into()
+            },
             StringContent::Uuid(_uuid) => RandomString::from(UuidGen {}).into(),
         };
         Ok(Graph::String(string_node))

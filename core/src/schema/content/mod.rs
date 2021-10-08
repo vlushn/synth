@@ -25,7 +25,7 @@ pub use number::{number_content, NumberContent, NumberContentKind, NumberKindExt
 mod string;
 pub use string::{
     ChronoValue, ChronoValueAndFormat, ChronoValueFormatter, ChronoValueType, DateTimeContent, FakerContent,
-    FakerContentArgument, FormatContent, RegexContent, StringContent, Uuid,
+    FakerContentArgument, FormatContent, RegexContent, StringContent, ConstantContent, Uuid,
 };
 
 mod array;
@@ -220,7 +220,11 @@ macro_rules! content {
                             let ref_ = FieldRef::deserialize(s.into_deserializer())?;
                             Ok(Content::SameAs(SameAsContent { ref_ }))
                         } else {
-                            Err(E::custom("string literals are synonymous to `same_as` and must start with `@` followed by the address of the referent"))
+                            let a = ConstantContent { content: v.to_string() };
+                            Ok(Content::String(StringContent::Constant(a)))
+                            //println!("X: {}", v);
+                            // FIXME
+                            // Err(E::custom("string literals are synonymous to `same_as` and must start with `@` followed by the address of the referent"))
                         }
                     }
                 }
